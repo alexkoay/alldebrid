@@ -1,7 +1,6 @@
-from attrs import define
+from pydantic import BaseModel
 
 
-@define(kw_only=True)
-class ErrorMessage:
+class ErrorMessage(BaseModel):
     code: str
     message: str

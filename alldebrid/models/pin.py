@@ -1,10 +1,9 @@
 from typing import Optional
 
-from attrs import define
+from pydantic import BaseModel
 
 
-@define(kw_only=True)
-class PinGet:
+class PinGet(BaseModel):
     pin: str
     check: str
     expires_in: int
@@ -13,8 +12,7 @@ class PinGet:
     check_url: str
 
 
-@define(kw_only=True)
-class PinCheck:
+class PinCheck(BaseModel):
     activated: bool
     expires_in: int
     apikey: Optional[str]

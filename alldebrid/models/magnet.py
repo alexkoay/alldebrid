@@ -1,26 +1,22 @@
 import itertools
-from typing import Any, Iterable, Optional, Type, Union
+from typing import Annotated, Any, Iterable, Optional, Union
 
-from attrs import define, field
+from pydantic import BaseModel, BeforeValidator
 
-from .converter import JSON_CONVERTER
 from .error import ErrorMessage
 
 
-@define(kw_only=True)
-class MagnetErrorURI:
+class MagnetErrorURI(BaseModel):
     magnet: str
     error: ErrorMessage
 
 
-@define(kw_only=True)
-class MagnetErrorFile:
+class MagnetErrorFile(BaseModel):
     file: str
     error: ErrorMessage
 
 
-@define(kw_only=True)
-class MagnetUploadURI:
+class MagnetUploadURI(BaseModel):
     magnet: str
     name: str
     id: int
@@ -29,8 +25,7 @@ class MagnetUploadURI:
     ready: bool
 
 
-@define(kw_only=True)
-class MagnetUploadFile:
+class MagnetUploadFile(BaseModel):
     file: str
     name: str
     id: int
@@ -39,25 +34,22 @@ class MagnetUploadFile:
     ready: bool
 
 
-@define(kw_only=True)
-class MagnetInstantURI:
+class MagnetInstantURI(BaseModel):
     magnet: str
     hash: str
     instant: bool
 
 
-@define(kw_only=True)
-class MagnetLinkEntryNormal:
+class MagnetLinkEntryNormal(BaseModel):
     path: str
     fname: str
     size: int
 
 
-@define(kw_only=True)
-class MagnetLinkEntry:
+class MagnetLinkEntry(BaseModel):
     n: str
-    e: Optional[list["MagnetLinkEntry"]] = field(default=None)
-    s: Optional[int] = field(default=None)
+    e: Optional[list["MagnetLinkEntry"]] = None
+    s: Optional[int] = None
 
     @classmethod
     def parse(cls, v: dict[str, Any]):
@@ -75,19 +67,18 @@ class MagnetLinkEntry:
             yield MagnetLinkEntryNormal(path=path, fname=self.n, size=self.s)
 
 
-@define(kw_only=True)
-class MagnetLink:
+class MagnetLink(BaseModel):
+    @staticmethod
+    def parse_files(x: list[Any]):
+        return list(itertools.chain(*(MagnetLinkEntry.parse(f).walk("") for f in x)))
+
     link: str
     filename: str
     size: int
-    files: list[MagnetLinkEntryNormal] = field(
-        factory=list,
-        converter=lambda x: list(itertools.chain(*(MagnetLinkEntry.parse(f).walk("") for f in x))),
-    )
+    files: Annotated[list[MagnetLinkEntryNormal], BeforeValidator(parse_files)]
 
 
-@define(kw_only=True)
-class MagnetStatus:
+class MagnetStatus(BaseModel):
     id: int
     filename: str
     size: int
@@ -107,45 +98,28 @@ class MagnetStatus:
     version: int
 
 
-@define(kw_only=True)
-class MagnetUploadFiles:
+class MagnetUploadFiles(BaseModel):
     files: list[Union[MagnetUploadFile, MagnetErrorFile]]
 
 
-@define(kw_only=True)
-class MagnetUploadURIs:
+class MagnetUploadURIs(BaseModel):
     magnets: list[Union[MagnetUploadURI, MagnetErrorURI]]
 
 
-@define(kw_only=True)
-class MagnetInstants:
+class MagnetInstants(BaseModel):
     magnets: list[Union[MagnetInstantURI, MagnetErrorURI]]
 
 
-@define(kw_only=True)
-class MagnetStatusesList:
+class MagnetStatusesList(BaseModel):
     magnets: list[MagnetStatus]
 
 
-@define(kw_only=True)
-class MagnetStatusesDict:
+class MagnetStatusesDict(BaseModel):
     magnets: dict[str, MagnetStatus]
 
 
-@define(kw_only=True)
-class MagnetStatusesOne:
+class MagnetStatusesOne(BaseModel):
     magnets: MagnetStatus
 
 
 MagnetStatuses = MagnetStatusesDict | MagnetStatusesList | MagnetStatusesOne
-
-
-def parse_magnet_status(data: Any, typ_: Type[Any]) -> MagnetStatuses:
-    if isinstance(data["magnets"], list):
-        return JSON_CONVERTER.structure(data, MagnetStatusesList)
-    if isinstance(data["magnets"], dict):
-        return JSON_CONVERTER.structure(data, MagnetStatusesDict)
-    return JSON_CONVERTER.structure(data, MagnetStatusesOne)
-
-
-JSON_CONVERTER.register_structure_hook(MagnetStatuses, parse_magnet_status)

@@ -4,7 +4,6 @@ from typing import Any, ClassVar, Literal, Optional, Type, TypeVar, Union
 
 import httpx
 
-from .models.converter import JSON_CONVERTER
 from .models.link import LinkDelayed, LinkInfo, LinkInfos, LinkRedirect, LinkUnlock
 from .models.magnet import (
     MagnetInstants,
@@ -22,8 +21,8 @@ T = TypeVar("T")
 
 
 class Client:
-    BASE: ClassVar[str] = "https://api.alldebrid.com/v4"
-    AGENT: str = "py.alldebrid"
+    BASE: ClassVar[str] = "https://api.alldebrid.com"
+    AGENT: str = "JDownloader"  # "pydebrid"
 
     def __init__(self, apikey: Optional[str] = None):
         self._apikey = apikey
@@ -41,10 +40,8 @@ class Client:
 
     @staticmethod
     def _parse_obj(type_: Type[Response[T]], response: httpx.Response) -> T:
-        raw = response.json()
-
         try:
-            output: Response[T] = JSON_CONVERTER.structure(raw, type_)
+            output = type_.model_validate_json(response.text)
         except Exception:
             with open("last_error.json", "w") as f:
                 f.write(response.text)
@@ -54,13 +51,13 @@ class Client:
     # Pin auth
 
     async def pin_get(self):
-        resp = await self._request("GET", "/pin/get")
+        resp = await self._request("GET", "/v4/pin/get")
         return self._parse_obj(Response[PinGet], resp)
 
     async def pin_check(self, check: str, pin: str):
         resp = await self._request(
             "GET",
-            "/pin/check",
+            "/v4/pin/check",
             params=dict(check=check, pin=pin),
         )
         data = self._parse_obj(Response[PinCheck], resp)
@@ -71,7 +68,7 @@ class Client:
     async def link_info(self, links: list[str], password: str = ""):
         resp = await self._request(
             "GET",
-            "/link/infos",
+            "/v4/link/infos",
             params={"link[]": links, "password": password},
         )
         data = self._parse_obj(Response[LinkInfos], resp)
@@ -80,7 +77,7 @@ class Client:
     async def link_redirect(self, link: str):
         resp = await self._request(
             "GET",
-            "/link/redirector",
+            "/v4/link/redirector",
             params=dict(link=link),
         )
         data = self._parse_obj(Response[LinkRedirect], resp)
@@ -89,7 +86,7 @@ class Client:
     async def link_unlock(self, link: str, password: str = ""):
         resp = await self._request(
             "GET",
-            "/link/unlock",
+            "/v4/link/unlock",
             params=dict(link=link, password=password),
         )
         data = self._parse_obj(Response[LinkUnlock], resp)
@@ -98,7 +95,7 @@ class Client:
     async def link_stream(self, id_: str, stream: str):
         resp = await self._request(
             "GET",
-            "/link/streaming",
+            "/v4/link/streaming",
             params=dict(id=id_, stream=stream),
         )
         data = self._parse_obj(Response[LinkInfo], resp)
@@ -107,7 +104,7 @@ class Client:
     async def link_delayed(self, id_: str):
         resp = await self._request(
             "GET",
-            "/link/delayed",
+            "/v4/link/delayed",
             params=dict(id=id_),
         )
         data = self._parse_obj(Response[LinkDelayed], resp)
@@ -125,13 +122,13 @@ class Client:
         return unlock
 
     async def magnet_upload(self, magnets: list[str]):
-        resp = await self._request("POST", "/magnet/upload", data={"magnets": magnets})
+        resp = await self._request("POST", "/v4/magnet/upload", data={"magnets": magnets})
         return self._parse_obj(Response[MagnetUploadURIs], resp)
 
     async def magnet_upload_file(self, fnames: list[str]):
         resp = await self._request(
             "POST",
-            "/magnet/upload/file",
+            "/v4/magnet/upload/file",
             files=[
                 (
                     "files[]",
@@ -149,7 +146,7 @@ class Client:
     async def magnet_upload_raw(self, *items: tuple[str, bytes]):
         resp = await self._request(
             "POST",
-            "/magnet/upload/file",
+            "/v4/magnet/upload/file",
             files=[
                 (
                     "files[]",
@@ -180,7 +177,7 @@ class Client:
             data["id"] = id
         if status is not None:
             data["status"] = status
-        resp = await self._request("GET", "/magnet/status", params=data)
+        resp = await self._request("GET", "/v4/magnet/status", params=data)
         result = self._parse_obj(Response[MagnetStatuses], resp)
         if isinstance(result, MagnetStatusesDict):
             return MagnetStatusesList(magnets=list(result.magnets.values()))
@@ -194,13 +191,13 @@ class Client:
 
     async def magnet_delete(self, id: int):
         data = {"id": id}
-        resp = await self._request("GET", "/magnet/delete", params=data)
+        resp = await self._request("GET", "/v4/magnet/delete", params=data)
         return self._parse_obj(Response[dict[str, Any]], resp)
 
     async def magnet_instant(self, magnets: list[str]):
         resp = await self._request(
             "POST",
-            "/magnet/instant",
+            "/v4/magnet/instant",
             data={"magnets[]": magnets},
         )
         return self._parse_obj(Response[MagnetInstants], resp)

@@ -2,19 +2,17 @@ from __future__ import annotations
 
 from typing import Optional, Union
 
-from attrs import define
+from pydantic import BaseModel
 
 from .error import ErrorMessage
 
 
-@define(kw_only=True)
-class LinkInfoError:
+class LinkInfoError(BaseModel):
     link: str
     error: ErrorMessage
 
 
-@define(kw_only=True)
-class LinkInfo:
+class LinkInfo(BaseModel):
     link: str
     filename: str
     size: int
@@ -22,18 +20,15 @@ class LinkInfo:
     hostDomain: str
 
 
-@define(kw_only=True)
-class LinkInfos:
+class LinkInfos(BaseModel):
     infos: list[Union[LinkInfo, LinkInfoError]]
 
 
-@define(kw_only=True)
-class LinkRedirect:
+class LinkRedirect(BaseModel):
     links: list[str]
 
 
-@define(kw_only=True)
-class LinkUnlockStream:
+class LinkUnlockStream(BaseModel):
     id: str
     ext: str
     quality: str
@@ -43,8 +38,7 @@ class LinkUnlockStream:
     link: Optional[str]
 
 
-@define(kw_only=True)
-class LinkUnlock:
+class LinkUnlock(BaseModel):
     id: str
     filename: str
     host: str
@@ -55,16 +49,14 @@ class LinkUnlock:
     delayed: Optional[str] = None
 
 
-@define(kw_only=True)
-class LinkStream:
+class LinkStream(BaseModel):
     link: str
     filename: str
     filesize: int
     delayed: Optional[int]
 
 
-@define(kw_only=True)
-class LinkDelayed:
+class LinkDelayed(BaseModel):
     status: int
     time_left: int
     link: Optional[str]

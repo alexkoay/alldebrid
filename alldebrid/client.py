@@ -22,18 +22,18 @@ T = TypeVar("T")
 
 class Client:
     BASE: ClassVar[str] = "https://api.alldebrid.com"
-    AGENT: str = "JDownloader"  # "pydebrid"
 
-    def __init__(self, apikey: Optional[str] = None):
+    def __init__(self, apikey: Optional[str] = None, name: Optional[str] = "py.alldebrid"):
         self._apikey = apikey
+        self.agent = name
 
     async def _request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
         async with httpx.AsyncClient(timeout=60 * 3) as client:
             if "params" in kwargs:
-                kwargs["params"]["agent"] = self.AGENT
+                kwargs["params"]["agent"] = self.agent
                 kwargs["params"]["apikey"] = self._apikey
             else:
-                kwargs["params"] = {"agent": self.AGENT, "apikey": self._apikey}
+                kwargs["params"] = {"agent": self.agent, "apikey": self._apikey}
             if url.startswith("/"):
                 url = self.BASE + url
             return await client.request(method, url=url, **kwargs)

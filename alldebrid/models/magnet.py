@@ -63,8 +63,7 @@ class MagnetLinkEntry(BaseModel):
             for entry in self.e:
                 yield from entry.walk(path + self.n + "/")
         else:
-            assert self.s is not None
-            yield MagnetLinkEntryNormal(path=path, fname=self.n, size=self.s)
+            yield MagnetLinkEntryNormal(path=path, fname=self.n, size=self.s or 0)
 
 
 class MagnetLink(BaseModel):

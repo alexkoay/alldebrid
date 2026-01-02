@@ -26,7 +26,7 @@ T = TypeVar("T")
 class Client:
     BASE: ClassVar[str] = "https://api.alldebrid.com"
 
-    def __init__(self, apikey: Optional[str] = None, name: Optional[str] = "py.alldebrid"):
+    def __init__(self, apikey: Optional[str] = None, name: Optional[str] = "py.alldebrid") -> None:
         self._apikey = apikey
         self.agent = name
 
@@ -53,11 +53,11 @@ class Client:
 
     # Pin auth
 
-    async def pin_get(self):
+    async def pin_get(self) -> PinGet:
         resp = await self._request("GET", "/v4/pin/get")
         return self._parse_obj(Response[PinGet], resp)
 
-    async def pin_check(self, check: str, pin: str):
+    async def pin_check(self, check: str, pin: str) -> PinCheck:
         resp = await self._request(
             "GET",
             "/v4/pin/check",
@@ -68,7 +68,7 @@ class Client:
             self._apikey = data.apikey
         return data
 
-    async def link_info(self, links: list[str], password: str = ""):
+    async def link_info(self, links: list[str], password: str = "") -> LinkInfos:
         resp = await self._request(
             "GET",
             "/v4/link/infos",
@@ -77,7 +77,7 @@ class Client:
         data = self._parse_obj(Response[LinkInfos], resp)
         return data
 
-    async def link_redirect(self, link: str):
+    async def link_redirect(self, link: str) -> LinkRedirect:
         resp = await self._request(
             "GET",
             "/v4/link/redirector",
@@ -86,7 +86,7 @@ class Client:
         data = self._parse_obj(Response[LinkRedirect], resp)
         return data
 
-    async def link_unlock(self, link: str, password: str = ""):
+    async def link_unlock(self, link: str, password: str = "") -> LinkUnlock:
         resp = await self._request(
             "GET",
             "/v4/link/unlock",
@@ -95,7 +95,7 @@ class Client:
         data = self._parse_obj(Response[LinkUnlock], resp)
         return data
 
-    async def link_stream(self, id_: str, stream: str):
+    async def link_stream(self, id_: str, stream: str) -> LinkInfo:
         resp = await self._request(
             "GET",
             "/v4/link/streaming",
@@ -104,7 +104,7 @@ class Client:
         data = self._parse_obj(Response[LinkInfo], resp)
         return data
 
-    async def link_delayed(self, id_: str):
+    async def link_delayed(self, id_: str) -> LinkDelayed:
         resp = await self._request(
             "GET",
             "/v4/link/delayed",
@@ -113,7 +113,7 @@ class Client:
         data = self._parse_obj(Response[LinkDelayed], resp)
         return data
 
-    async def link_download(self, link: str, password: str = ""):
+    async def link_download(self, link: str, password: str = "") -> LinkUnlock:
         unlock = await self.link_unlock(link, password)
         while not unlock.link and unlock.delayed:
             delayed = await self.link_delayed(unlock.delayed)
@@ -124,11 +124,11 @@ class Client:
 
         return unlock
 
-    async def magnet_upload(self, magnets: list[str]):
+    async def magnet_upload(self, magnets: list[str]) -> MagnetUploadURIs:
         resp = await self._request("POST", "/v4/magnet/upload", data={"magnets": magnets})
         return self._parse_obj(Response[MagnetUploadURIs], resp)
 
-    async def magnet_upload_file(self, fnames: list[str]):
+    async def magnet_upload_file(self, fnames: list[str]) -> MagnetUploadFiles:
         resp = await self._request(
             "POST",
             "/v4/magnet/upload/file",
@@ -146,7 +146,7 @@ class Client:
         )
         return self._parse_obj(Response[MagnetUploadFiles], resp)
 
-    async def magnet_upload_raw(self, *items: tuple[str, bytes]):
+    async def magnet_upload_raw(self, *items: tuple[str, bytes]) -> MagnetUploadFiles:
         resp = await self._request(
             "POST",
             "/v4/magnet/upload/file",
@@ -174,7 +174,7 @@ class Client:
             Literal["error"],
             None,
         ] = None,
-    ):
+    ) -> MagnetStatusesList:
         data: dict[str, Any] = {}
         if id_ is not None:
             data["id"] = id_
@@ -189,7 +189,7 @@ class Client:
         else:
             return result
 
-    async def magnet_files(self, ids: int | list[int]):
+    async def magnet_files(self, ids: int | list[int]) -> MagnetFilesList:
         data = {"id[]": ids if isinstance(ids, list) else [ids]}
         resp = await self._request("GET", "/v4/magnet/files", params=data)
         result = self._parse_obj(Response[MagnetFilesUnion], resp)
@@ -200,7 +200,7 @@ class Client:
         else:
             return result
 
-    async def magnet_delete(self, id: int):
+    async def magnet_delete(self, id: int) -> dict[str, Any]:
         data = {"id": id}
         resp = await self._request("GET", "/v4/magnet/delete", params=data)
         return self._parse_obj(Response[dict[str, Any]], resp)

@@ -6,11 +6,14 @@ import httpx
 
 from .models.link import LinkDelayed, LinkInfo, LinkInfos, LinkRedirect, LinkUnlock
 from .models.magnet import (
-    MagnetInstants,
-    MagnetStatuses,
+    MagnetFilesDict,
+    MagnetFilesList,
+    MagnetFilesOne,
+    MagnetFilesUnion,
     MagnetStatusesDict,
     MagnetStatusesList,
     MagnetStatusesOne,
+    MagnetStatusUnion,
     MagnetUploadFiles,
     MagnetUploadURIs,
 )
@@ -163,7 +166,7 @@ class Client:
 
     async def magnet_status(
         self,
-        id: Optional[int] = None,
+        id_: Optional[int] = None,
         status: Union[
             Literal["active"],
             Literal["ready"],
@@ -173,12 +176,12 @@ class Client:
         ] = None,
     ):
         data: dict[str, Any] = {}
-        if id is not None:
-            data["id"] = id
+        if id_ is not None:
+            data["id"] = id_
         if status is not None:
             data["status"] = status
-        resp = await self._request("GET", "/v4/magnet/status", params=data)
-        result = self._parse_obj(Response[MagnetStatuses], resp)
+        resp = await self._request("GET", "/v4.1/magnet/status", params=data)
+        result = self._parse_obj(Response[MagnetStatusUnion], resp)
         if isinstance(result, MagnetStatusesDict):
             return MagnetStatusesList(magnets=list(result.magnets.values()))
         if isinstance(result, MagnetStatusesOne):
@@ -186,18 +189,18 @@ class Client:
         else:
             return result
 
-    async def magnet_status_live(self, session: int, counter: int):
-        pass
+    async def magnet_files(self, ids: int | list[int]):
+        data = {"id[]": ids if isinstance(ids, list) else [ids]}
+        resp = await self._request("GET", "/v4/magnet/files", params=data)
+        result = self._parse_obj(Response[MagnetFilesUnion], resp)
+        if isinstance(result, MagnetFilesDict):
+            return MagnetFilesList(magnets=list(result.magnets.values()))
+        if isinstance(result, MagnetFilesOne):
+            return MagnetFilesList(magnets=[result.magnets])
+        else:
+            return result
 
     async def magnet_delete(self, id: int):
         data = {"id": id}
         resp = await self._request("GET", "/v4/magnet/delete", params=data)
         return self._parse_obj(Response[dict[str, Any]], resp)
-
-    async def magnet_instant(self, magnets: list[str]):
-        resp = await self._request(
-            "POST",
-            "/v4/magnet/instant",
-            data={"magnets[]": magnets},
-        )
-        return self._parse_obj(Response[MagnetInstants], resp)

@@ -84,17 +84,54 @@ class MagnetStatus(BaseModel):
     hash: str
     status: str
     statusCode: int
-    downloaded: int
-    uploaded: int
-    seeders: int
-    downloadSpeed: int
-    uploadSpeed: int
+    downloaded: Optional[int] = None
+    uploaded: Optional[int] = None
+    seeders: Optional[int] = None
+    downloadSpeed: Optional[int] = None
+    uploadSpeed: Optional[int] = None
     uploadDate: int
     completionDate: int
-    links: list[MagnetLink]
     type: str
     notified: bool
     version: int
+
+
+class MagnetFileEntryNormal(BaseModel):
+    path: str
+    fname: str
+    size: int
+    link: str
+
+
+class MagnetFileEntry(BaseModel):
+    n: str
+    e: Optional[list["MagnetFileEntry"]] = None
+    s: Optional[int] = None
+    l: Optional[str] = None
+
+    @classmethod
+    def parse(cls, v: dict[str, Any]):
+        if "e" not in v:
+            return MagnetLinkEntry(**v)
+        v["e"] = [cls.parse(f) for f in v["e"]]
+        return MagnetLinkEntry(**v)
+
+    def walk(self, path: str) -> Iterable[MagnetFileEntryNormal]:
+        if self.e is not None:
+            for entry in self.e:
+                yield from entry.walk(path + self.n + "/")
+        else:
+            assert self.l
+            yield MagnetFileEntryNormal(path=path, fname=self.n, size=self.s or 0, link=self.l)
+
+
+class MagnetFiles(BaseModel):
+    @staticmethod
+    def parse_files(x: list[Any]):
+        return list(itertools.chain(*(MagnetLinkEntry.parse(f).walk("") for f in x)))
+
+    id: int
+    files: Annotated[list[MagnetLinkEntryNormal], BeforeValidator(parse_files)]
 
 
 class MagnetUploadFiles(BaseModel):
@@ -121,4 +158,17 @@ class MagnetStatusesOne(BaseModel):
     magnets: MagnetStatus
 
 
-MagnetStatuses = MagnetStatusesDict | MagnetStatusesList | MagnetStatusesOne
+class MagnetFilesList(BaseModel):
+    magnets: list[MagnetFiles]
+
+
+class MagnetFilesDict(BaseModel):
+    magnets: dict[str, MagnetFiles]
+
+
+class MagnetFilesOne(BaseModel):
+    magnets: MagnetFiles
+
+
+MagnetStatusUnion = MagnetStatusesDict | MagnetStatusesList | MagnetStatusesOne
+MagnetFilesUnion = MagnetFilesDict | MagnetFilesList | MagnetFilesOne

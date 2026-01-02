@@ -1,6 +1,6 @@
 [project]
 name = "alldebrid"
-version = "0.3.1"
+version = "0.3.2"
 description = "Lightweight async wrapper for AllDebrid API"
 readme = "README.md"
 requires-python = ">=3.9"

@@ -4,7 +4,7 @@ requires-python = ">=3.9"
 
 [[package]]
 name = "alldebrid"
-version = "0.3.0"
+version = "0.3.1"
 source = { virtual = "." }
 dependencies = [
     { name = "httpx" },

@@ -112,9 +112,9 @@ class MagnetFileEntry(BaseModel):
     @classmethod
     def parse(cls, v: dict[str, Any]):
         if "e" not in v:
-            return MagnetLinkEntry(**v)
+            return MagnetFileEntry(**v)
         v["e"] = [cls.parse(f) for f in v["e"]]
-        return MagnetLinkEntry(**v)
+        return MagnetFileEntry(**v)
 
     def walk(self, path: str) -> Iterable[MagnetFileEntryNormal]:
         if self.e is not None:
@@ -128,10 +128,10 @@ class MagnetFileEntry(BaseModel):
 class MagnetFiles(BaseModel):
     @staticmethod
     def parse_files(x: list[Any]):
-        return list(itertools.chain(*(MagnetLinkEntry.parse(f).walk("") for f in x)))
+        return list(itertools.chain(*(MagnetFileEntry.parse(f).walk("") for f in x)))
 
     id: int
-    files: Annotated[list[MagnetLinkEntryNormal], BeforeValidator(parse_files)]
+    files: Annotated[list[MagnetFileEntryNormal], BeforeValidator(parse_files)]
 
 
 class MagnetUploadFiles(BaseModel):
